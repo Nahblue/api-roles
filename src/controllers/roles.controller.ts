@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, NotFoundException, Param, Post, Put, UnprocessableEntityException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateRoleParams } from 'src/dtos/create-role-params';
 import { CreateRoleBody } from 'src/dtos/create-role-body';
@@ -26,7 +26,7 @@ export class RolesController {
     })
 
     if (!role) {
-      throw new HttpException('Cargo não encontrado', HttpStatus.BAD_REQUEST)
+      throw new HttpException('Cargo não encontrado', HttpStatus.NOT_FOUND)
     }
 
     return {
@@ -36,66 +36,55 @@ export class RolesController {
 
   @Post('/create')
   async createRole(@Body() body: CreateRoleBody) {
-    try {
-      const { description } = body
+    const { description } = body
 
-      const checkIfRoleExists = await this.prisma.roles.findFirst({
-        where: {
-          description: description.toLocaleLowerCase()
-        }
-      })
-
-      if (checkIfRoleExists) {
-        throw new HttpException('Esse cargo já existe', HttpStatus.BAD_REQUEST)
+    const checkIfRoleExists = await this.prisma.roles.findFirst({
+      where: {
+        description: description.toLocaleLowerCase()
       }
+    })
 
-      const role = await this.prisma.roles.create({
-        data: {
-          description: description.toLocaleLowerCase()
-        }
-      })
-
-      return {
-        role,
-      }
-
-    } catch (error) {
-      throw error
+    if (checkIfRoleExists) {
+      throw new HttpException('Esse cargo já existe', HttpStatus.BAD_REQUEST)
     }
-    
+
+    const role = await this.prisma.roles.create({
+      data: {
+        description: description.toLocaleLowerCase()
+      }
+    })
+
+    return {
+      role,
+    }
   }
 
   @Put('/edit/:id')
   async editRole( @Param() params: CreateRoleParams, @Body() body: CreateRoleBody) {
-    try {
-      const { id } = params
-      const { description } = body
+    const { id } = params
+    const { description } = body
 
-      const role = await this.prisma.roles.findFirst({
-        where: {
-          id: parseInt(id)
-        }
-      })
-  
-      if (!role) {
-        throw new HttpException('Esse cargo não existe', HttpStatus.BAD_REQUEST)
+    const checkIfRoleExists = await this.prisma.roles.findFirst({
+      where: {
+        id: parseInt(id)
       }
+    })
+  
+    if (!checkIfRoleExists) {
+      throw new HttpException('Esse cargo não existe', HttpStatus.NOT_FOUND)
+    }
       
-      const editedRole = await this.prisma.roles.update({
-        where: {
-          id: parseInt(id)
-        },
-        data: {
-          description: description.toLocaleLowerCase()
-        }
-      })
-  
-      return {
-        editedRole,
+    const editedRole = await this.prisma.roles.update({
+      where: {
+        id: parseInt(id)
+      },
+      data: {
+        description: description.toLocaleLowerCase()
       }
-
-    } catch (error) {
-      throw error
+    })
+  
+    return {
+      editedRole,
     }
   }
 
@@ -110,7 +99,7 @@ export class RolesController {
     })
 
     if (!deletedRole) {
-      throw new HttpException('Cargo não encontrado.', HttpStatus.BAD_REQUEST)
+      throw new HttpException('Cargo não encontrado.', HttpStatus.NOT_FOUND)
     }
 
     return {
