@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { CreateRoleParams } from 'src/dtos/create-role-params';
+import { CreateRoleParams, CreateRoleSearchParams } from 'src/dtos/create-role-params';
 import { CreateRoleBody } from 'src/dtos/create-role-body';
 
 @Controller('cargos')
@@ -11,17 +11,26 @@ export class RolesController {
 
   @Get('/list')
   async index() {
-    const roles = await this.prisma.roles.findMany()
+    const roles = await this.prisma.roles.findMany({
+      orderBy: {
+        description: "asc"
+      }
+    })
 
     return roles
   }
 
-  @Get('/:id')
-  async getRole(@Param() params: CreateRoleParams) {
-    const { id } = params
-    const role = await this.prisma.roles.findFirst({
+  @Get('/:description')
+  async getRole(@Param() params: CreateRoleSearchParams) {
+    const { description } = params
+    const role = await this.prisma.roles.findMany({
       where: {
-        id: parseInt(id)
+        description: {
+          contains: description.toLocaleLowerCase()
+        },
+      },
+      orderBy: {
+        description: "asc"
       }
     })
 
@@ -29,9 +38,8 @@ export class RolesController {
       throw new HttpException('Cargo não encontrado', HttpStatus.NOT_FOUND)
     }
 
-    return {
-      role,
-    }
+    return role
+    
   }
 
   @Post('/create')
@@ -40,7 +48,7 @@ export class RolesController {
 
     const checkIfRoleExists = await this.prisma.roles.findFirst({
       where: {
-        description: description.toLocaleLowerCase()
+        description: description.toLowerCase()
       }
     })
 
@@ -50,7 +58,7 @@ export class RolesController {
 
     const role = await this.prisma.roles.create({
       data: {
-        description: description.toLocaleLowerCase()
+        description: description.toLowerCase()
       }
     })
 
@@ -79,7 +87,7 @@ export class RolesController {
         id: parseInt(id)
       },
       data: {
-        description: description.toLocaleLowerCase()
+        description: description.toLowerCase()
       }
     })
   
